@@ -1,12 +1,12 @@
 #!/bin/bash
 set -e
 
-echo "[INFO] Starting development tools installation"
+echo "--- Starting development tools installation ---"
 
 install_docker() {
-  echo "[INFO] Checking Docker installation status"
+  echo "Checking Docker..."
   if ! command -v docker &> /dev/null; then
-    echo "[INFO] Installing Docker"
+    echo "Installing Docker..."
     sudo apt update -y
     sudo apt install -y ca-certificates curl gnupg lsb-release
     sudo mkdir -p /etc/apt/keyrings
@@ -19,47 +19,47 @@ install_docker() {
     sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     sudo systemctl enable docker
     sudo systemctl start docker
-    echo "[SUCCESS] Docker installed successfully"
+    echo "✅ Docker installed successfully."
   else
-    echo "[SUCCESS] Docker is already installed"
+    echo "✅ Docker is already installed."
   fi
 }
 
 install_docker_compose() {
-  echo "[INFO] Checking Docker Compose installation status"
+  echo "Checking Docker Compose..."
   if ! command -v docker-compose &> /dev/null; then
-    echo "[INFO] Installing Docker Compose"
+    echo "Installing Docker Compose..."
     sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
-    echo "[SUCCESS] Docker Compose installed successfully"
+    echo "✅ Docker Compose installed successfully."
   else
-    echo "[SUCCESS] Docker Compose is already installed"
+    echo "✅ Docker Compose is already installed."
   fi
 }
 
 install_python() {
-  echo "[INFO] Checking Python installation status"
+  echo "Checking Python..."
   if ! command -v python3 &> /dev/null; then
-    echo "[INFO] Installing Python 3"
+    echo "Installing Python 3..."
     sudo apt update -y
     sudo apt install -y python3 python3-pip python3-venv
-    echo "[SUCCESS] Python installed successfully"
+    echo "✅ Python installed successfully."
   else
     PY_VER=$(python3 -V | awk '{print $2}')
-    echo "[SUCCESS] Python is already installed (version $PY_VER)"
+    echo "✅ Python is already installed (version $PY_VER)."
   fi
 }
 
 install_django() {
-  echo "[INFO] Checking Django installation status"
+  echo "Checking Django..."
   if ! pip3 show django &> /dev/null; then
-    echo "[INFO] Installing Django"
+    echo "Installing Django..."
     pip3 install --upgrade pip
     pip3 install django
-    echo "[SUCCESS] Django installed successfully"
+    echo "✅ Django installed successfully."
   else
     DJ_VER=$(pip3 show django | grep Version | awk '{print $2}')
-    echo "[SUCCESS] Django is already installed (version $DJ_VER)"
+    echo "✅ Django is already installed (version $DJ_VER)."
   fi
 }
 
@@ -68,4 +68,4 @@ install_docker_compose
 install_python
 install_django
 
-echo "[SUCCESS] All tools have been successfully installed"
+echo "All development tools have been successfully installed!"
