@@ -1,0 +1,29 @@
+image:
+  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/lesson-7-ecr
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8000
+
+autoscaler:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+config:
+  DJANGO_SETTINGS_MODULE: myproject.settings
+  SECRET_KEY: "change-me"
+  ALLOWED_HOSTS: "*"
+  DEBUG: "False"
+
+ingress:
+  enabled: false
+  className: nginx
+  host: app.example.com
+  path: /
+  pathType: Prefix
+  tls: false

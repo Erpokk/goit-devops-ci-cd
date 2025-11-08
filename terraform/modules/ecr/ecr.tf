@@ -1,5 +1,3 @@
-data "aws_caller_identity" "current" {}
-
 resource "aws_ecr_repository" "ecr" {
   name                 = var.ecr_name
   image_tag_mutability = "MUTABLE"
@@ -8,6 +6,8 @@ resource "aws_ecr_repository" "ecr" {
     scan_on_push = var.scan_on_push
   }
 }
+
+data "aws_caller_identity" "current" {}
 
 resource "aws_ecr_repository_policy" "full_access" {
   repository = aws_ecr_repository.ecr.name
@@ -26,4 +26,3 @@ resource "aws_ecr_repository_policy" "full_access" {
     ]
   })
 }
-

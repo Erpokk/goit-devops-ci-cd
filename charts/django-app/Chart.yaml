@@ -1,0 +1,6 @@
+apiVersion: v2
+name: django-app
+description: Django application deployment for Lesson 7
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

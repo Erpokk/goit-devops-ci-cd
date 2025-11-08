@@ -4,7 +4,7 @@ output "s3_bucket_name" {
 }
 
 output "s3_bucket_arn" {
-  description = "S3 bucket ARN for state storage"
+  description = "ARN of the S3 bucket for state storage"
   value       = aws_s3_bucket.terraform_state.arn
 }
 

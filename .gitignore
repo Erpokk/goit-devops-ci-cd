@@ -1,4 +1,5 @@
 .terraform/
+.terraform.lock.hcl
 terraform.tfstate
 terraform.tfstate.*
 crash.log
@@ -8,4 +9,9 @@ override.tf
 override.tf.json
 terraform.rc
 .DS_Store
+.idea/
+*.iml
+__pycache__/
+.pytest_cache/
+*.log
 
