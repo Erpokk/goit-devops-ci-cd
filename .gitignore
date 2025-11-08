@@ -1,8 +1,11 @@
-*.pyc
-__pycache__/
-db.sqlite3
-.env
-*.log
-staticfiles/
-postgres_data/
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+crash.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+terraform.rc
+.DS_Store
 
