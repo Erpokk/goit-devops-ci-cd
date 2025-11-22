@@ -22,16 +22,6 @@
             status.textContent = data.success
               ? "✅ Database connection successful!"
               : "❌ Database connection failed!";
-            const configBox = document.getElementById("dbConfig");
-            const hostnameEl = document.getElementById("db-hostname");
-            const portEl = document.getElementById("db-port");
-            const nameEl = document.getElementById("db-name");
-            const userEl = document.getElementById("db-user");
-            hostnameEl.textContent = data.config.db_hostname;
-            portEl.textContent = data.config.db_port;
-            nameEl.textContent = data.config.db_name;
-            userEl.textContent = data.config.db_user;
-            configBox.classList.remove("hidden");
           } else {
             status.textContent = "❌ Error: " + response.statusText;
           }
@@ -81,15 +71,6 @@
         Test DB Connection
       </button>
       <p id="status" class="mt-6 text-sm text-gray-500 dark:text-gray-400"></p>
-      <div
-        id="dbConfig"
-        class="mt-4 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg p-3 hidden"
-      >
-        <p><strong>DB Hostname:</strong> <span id="db-hostname">-</span></p>
-        <p><strong>DB Port:</strong> <span id="db-port">-</span></p>
-        <p><strong>DB Name:</strong> <span id="db-name">-</span></p>
-        <p><strong>DB User:</strong> <span id="db-user">-</span></p>
-      </div>
 
       <h2 class="text-2xl font-semibold mb-6">Server Info</h2>
       <button

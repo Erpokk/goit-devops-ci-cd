@@ -1,0 +1,28 @@
+applications:
+    -   name: example-app
+        namespace: default
+        project: default
+        source:
+            repoURL: "https://github.com/${GITHUB_USERNAME}/${GITHUB_REPO}.git"
+            path: charts/django-app
+            targetRevision: ${GITHUB_BRANCH}
+            helm:
+                valueFiles:
+                    - values.yaml
+        destination:
+            server: "https://kubernetes.default.svc"
+            namespace: default
+        syncPolicy:
+            automated:
+                prune: true
+                selfHeal: true
+
+repositories:
+    -   name: goit-devops-django-app
+        url: "https://github.com/${GITHUB_USERNAME}/${GITHUB_REPO}.git"
+        username: ${GITHUB_USERNAME}
+        password:
+
+repoConfig:
+    insecure: "true"
+    enableLfs: "true"

@@ -28,7 +28,7 @@ spec:
   }
 
   environment {
-    ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+    ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}"
     IMAGE_NAME   = "${ECR_REPOSITORY_NAME}"
     IMAGE_TAG    = "v1.0.${BUILD_NUMBER}"
     COMMIT_EMAIL = "jenkins@localhost"
@@ -54,7 +54,6 @@ spec:
         }
       }
     }
-
     stage('Update Chart Tag in Git') {
       steps {
         container('git') {

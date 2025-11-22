@@ -1,6 +1,6 @@
-# DevOps CI/CD Infrastructure with RDS
+# 🚀 CI/CD for Django on EKS with Jenkins and ArgoCD
 
-This project contains Terraform infrastructure for deploying a Django application on AWS EKS with Jenkins CI/CD, ArgoCD for GitOps, and RDS PostgreSQL database.
+This project demonstrates how to deploy a Django application on AWS EKS using Terraform, Docker, ECR, Jenkins, and ArgoCD.
 
 ## Overview
 
@@ -11,6 +11,7 @@ The infrastructure includes:
 - ArgoCD for GitOps deployments
 - ECR for Docker image registry
 - Helm charts for application deployment
+- Prometheus and Grafana for monitoring
 
 ## Prerequisites
 
@@ -18,7 +19,8 @@ The infrastructure includes:
 2. Terraform >= 1.0 installed
 3. kubectl installed
 4. Helm installed
-5. GitHub Personal Access Token (PAT) with repo permissions
+5. Docker installed
+6. GitHub Personal Access Token (PAT) with repo permissions
 
 ## Configuration
 
@@ -27,56 +29,61 @@ The infrastructure includes:
 Copy the example variables file and fill in your values:
 
 ```bash
+cd terraform
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-Edit `terraform.tfvars` with your configuration:
-- `project_name` - Your project name (used for resource naming)
-- `environment` - Environment name (dev, staging, prod)
+Edit `terraform/terraform.tfvars` with your configuration:
+
+**Required variables:**
+- `name` - Project name (used for resource naming)
 - `aws_account_id` - Your AWS account ID
-- `github_username` - Your GitHub username
-- `github_repo` - Your repository name
-- `github_branch` - Branch name (e.g., main, lesson-8-9)
+- `s3_backend_bucket` - S3 bucket name for Terraform state
 - `ecr_repository_name` - ECR repository name
-- `rds_password` - Secure database password
+- `github_username` - Your GitHub username
+- `github_repo` - Your GitHub repository name
 - `jenkins_admin_password` - Secure Jenkins admin password
+- `grafana_admin_password` - Secure Grafana admin password
+- `rds_password` - Secure database password
+
+**Optional variables (have defaults):**
+- `aws_region` - AWS region (default: `us-east-1`)
+- `github_branch` - GitHub branch name (default: `main`)
+- `rds_username` - RDS username (default: `postgres`)
+- `rds_database_name` - Database name (default: `myapp`)
+- `rds_use_aurora` - Use Aurora (default: `false`)
+- `rds_instance_class` - RDS instance class (default: `db.t3.micro`)
 
 ### 2. Update Backend Configuration
 
-Edit `backend.tf` and replace the bucket name with your S3 bucket name for Terraform state:
+Edit `terraform/backend.tf` and replace the bucket name with your S3 bucket name:
 
 ```hcl
-bucket = "your-project-name-your-environment-terraform-state"
+bucket = "your-project-name-terraform-state"
 ```
+
+**Note:** Backend configuration cannot use variables directly. You must set the bucket name manually or use partial configuration via `-backend-config` flags.
 
 ### 3. Update YAML Configuration Files
 
-The following files contain placeholder variables that need to be replaced with actual values:
+The following YAML files contain placeholder variables that need to be replaced with actual values:
 
-#### `modules/jenkins/values.yaml`
+#### `terraform/modules/jenkins/values.yaml`
 Replace:
-- `${JENKINS_ADMIN_USERNAME}` - Jenkins admin username
 - `${JENKINS_ADMIN_PASSWORD}` - Jenkins admin password
 - `${GITHUB_USERNAME}` - GitHub username
 - `${GITHUB_REPO}` - GitHub repository name
 - `${GITHUB_BRANCH}` - GitHub branch name
 
-#### `modules/argo-cd/charts/values.yaml`
+#### `terraform/modules/argo-cd/charts/values.yaml`
 Replace:
 - `${GITHUB_USERNAME}` - GitHub username
 - `${GITHUB_REPO}` - GitHub repository name
 - `${GITHUB_BRANCH}` - GitHub branch name
 
-#### `charts/django-app/values.yaml`
+#### `terraform/modules/monitoring/values.yaml`
 Replace:
-- `${AWS_ACCOUNT_ID}` - AWS account ID
-- `${AWS_REGION}` - AWS region (e.g., eu-central-1)
-- `${ECR_REPOSITORY_NAME}` - ECR repository name
-- `${POSTGRES_HOST}` - RDS endpoint (get from Terraform output after RDS creation)
-- `${POSTGRES_PORT}` - Database port (default: 5432)
-- `${POSTGRES_USER}` - Database username
-- `${POSTGRES_DB}` - Database name
-- `${POSTGRES_PASSWORD}` - Database password
+- `${GRAFANA_ADMIN_PASSWORD}` - Grafana admin password
 
 #### `django/Jenkinsfile`
 Replace:
@@ -87,303 +94,141 @@ Replace:
 - `${GITHUB_REPO}` - GitHub repository name
 - `${GITHUB_BRANCH}` - GitHub branch name
 
-## How to Apply Terraform
+## How to Use Variables
 
-1. Initialize Terraform:
+### Terraform Variables
+
+All Terraform variables are defined in `terraform/variables.tf`. You can set them in three ways:
+
+1. **terraform.tfvars file** (recommended):
+```hcl
+name = "my-project"
+aws_account_id = "123456789012"
+```
+
+2. **Command line**:
+```bash
+terraform apply -var="name=my-project" -var="aws_account_id=123456789012"
+```
+
+3. **Environment variables**:
+```bash
+export TF_VAR_name="my-project"
+export TF_VAR_aws_account_id="123456789012"
+terraform apply
+```
+
+### YAML Variables
+
+YAML files use placeholder syntax `${VARIABLE_NAME}`. These need to be replaced manually with actual values before deployment, or you can use a templating tool like `envsubst`:
+
+```bash
+export JENKINS_ADMIN_PASSWORD="your-password"
+export GITHUB_USERNAME="your-username"
+envsubst < modules/jenkins/values.yaml > modules/jenkins/values-resolved.yaml
+```
+
+### Jenkinsfile Variables
+
+Jenkinsfile uses environment variables. Set them in Jenkins job configuration or in the Jenkinsfile itself:
+
+```groovy
+environment {
+  AWS_ACCOUNT_ID = "123456789012"
+  AWS_REGION = "us-east-1"
+  ECR_REPOSITORY_NAME = "my-ecr-repo"
+}
+```
+
+## Terraform Setup
+
+1. Go to the Terraform directory:
+
+```bash
+cd terraform
+```
+
+2. Initialize Terraform:
+
 ```bash
 terraform init
 ```
 
-2. Review the execution plan:
+3. Review the execution plan:
+
 ```bash
 terraform plan
 ```
 
-3. Apply the infrastructure:
+4. Apply the infrastructure:
+
 ```bash
 terraform apply
 ```
 
-4. Confirm by typing `yes` when prompted.
+5. Destroy infrastructure (when needed):
 
-5. Wait for all resources to be created (15-20 minutes):
-   - VPC and subnets
-   - EKS cluster and node groups
-   - RDS database instance
-   - ECR repository
-   - Jenkins deployment
-   - ArgoCD deployment
-
-6. Get RDS endpoint from Terraform output:
 ```bash
-terraform output rds_endpoint
+terraform destroy
 ```
 
-7. Update `charts/django-app/values.yaml` with the RDS endpoint.
+## Configure Kubernetes Access
 
-8. Get kubeconfig for the EKS cluster:
+After Terraform creates the EKS cluster, configure your kubeconfig:
+
 ```bash
-aws eks --region ${AWS_REGION} update-kubeconfig --name eks-${PROJECT_NAME}-${ENVIRONMENT}-cluster
+aws eks --region ${AWS_REGION} update-kubeconfig --name eks-cluster-${PROJECT_NAME}
 ```
 
-9. Verify cluster access:
+Verify cluster access:
+
 ```bash
 kubectl get nodes
 ```
 
-## Terraform Module Structure
+If nodes show `Ready`, your cluster is ready.
 
-### RDS Module
+## Build and Push Docker Image
 
-Універсальний модуль RDS підтримує як стандартну RDS, так і Aurora PostgreSQL через параметр `use_aurora`.
+### Mac/Linux version
 
-#### Приклад використання модуля
+1. Authenticate Docker with AWS ECR:
 
-```hcl
-module "rds" {
-  source = "./modules/rds"
-
-  name                  = var.rds_name
-  use_aurora            = false  # false = стандартна RDS, true = Aurora
-  aurora_instance_count = 2      # кількість інстансів для Aurora (1 writer + replicas)
-  
-  # RDS Configuration (використовується коли use_aurora = false)
-  engine                     = "postgres"
-  engine_version             = "17.2"
-  parameter_group_family_rds = "postgres17"
-  
-  # Aurora Configuration (використовується коли use_aurora = true)
-  engine_cluster                = "aurora-postgresql"
-  engine_version_cluster        = "15.3"
-  parameter_group_family_aurora = "aurora-postgresql15"
-
-  instance_class          = var.rds_instance_class
-  allocated_storage       = var.rds_allocated_storage
-  db_name                 = var.rds_db_name
-  username                = var.rds_username
-  password                = var.rds_password
-  
-  subnet_private_ids      = module.vpc.private_subnets
-  subnet_public_ids       = module.vpc.public_subnets
-  publicly_accessible     = true
-  vpc_id                  = module.vpc.vpc_id
-  multi_az                = true
-  backup_retention_period  = 0
-  
-  parameters = {
-    max_connections            = "200"
-    log_min_duration_statement = "500"
-  }
-  
-  tags = {
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
+```bash
+aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 ```
 
-#### Опис усіх змінних модуля RDS
+2. Build and push the image:
 
-| Змінна | Тип | Опис | Дефолт | Обов'язкова |
-|--------|-----|------|--------|-------------|
-| `name` | `string` | Назва RDS інстансу або кластера | - | ✅ |
-| `use_aurora` | `bool` | Використовувати Aurora (`true`) або стандартну RDS (`false`) | `false` | ❌ |
-| `aurora_instance_count` | `number` | Кількість інстансів для Aurora (1 writer + replicas) | `2` | ❌ |
-| `aurora_replica_count` | `number` | Кількість reader реплік для Aurora | `1` | ❌ |
-| `engine` | `string` | Тип движка для стандартної RDS (postgres, mysql, mariadb) | `"postgres"` | ❌ |
-| `engine_version` | `string` | Версія движка для стандартної RDS | `"14.7"` | ❌ |
-| `engine_cluster` | `string` | Тип движка для Aurora (aurora-postgresql, aurora-mysql) | `"aurora-postgresql"` | ❌ |
-| `engine_version_cluster` | `string` | Версія движка для Aurora | `"15.3"` | ❌ |
-| `instance_class` | `string` | Клас інстансу (db.t3.micro, db.t3.small, db.r5.large тощо) | `"db.t3.micro"` | ❌ |
-| `allocated_storage` | `number` | Розмір диску в GB (тільки для стандартної RDS) | `20` | ❌ |
-| `db_name` | `string` | Назва бази даних | - | ✅ |
-| `username` | `string` | Мастер username для БД | - | ✅ |
-| `password` | `string` | Мастер password для БД (sensitive) | - | ✅ |
-| `vpc_id` | `string` | ID VPC для створення Security Group | - | ✅ |
-| `subnet_private_ids` | `list(string)` | Список ID приватних підмереж | - | ✅ |
-| `subnet_public_ids` | `list(string)` | Список ID публічних підмереж | - | ✅ |
-| `publicly_accessible` | `bool` | Чи доступна БД з інтернету | `false` | ❌ |
-| `multi_az` | `bool` | Multi-AZ розгортання (тільки для стандартної RDS) | `false` | ❌ |
-| `backup_retention_period` | `string` | Період збереження бекупів (дні) | `""` | ❌ |
-| `parameter_group_family_rds` | `string` | Сімейство параметрів для стандартної RDS | `"postgres15"` | ❌ |
-| `parameter_group_family_aurora` | `string` | Сімейство параметрів для Aurora | `"aurora-postgresql15"` | ❌ |
-| `parameters` | `map(string)` | Додаткові параметри БД (наприклад, max_connections) | `{}` | ❌ |
-| `tags` | `map(string)` | Теги для ресурсів | `{}` | ❌ |
-
-#### Як змінити тип БД, engine, клас інстансу тощо
-
-**1. Зміна типу БД (RDS ↔ Aurora):**
-
-```hcl
-module "rds" {
-  # ...
-  use_aurora = true  # true для Aurora, false для стандартної RDS
-  # ...
-}
+```bash
+docker buildx build --platform linux/amd64 -t ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${VERSION} --push .
 ```
 
-**2. Зміна типу движка (PostgreSQL ↔ MySQL):**
+Replace:
+- `${AWS_ACCOUNT_ID}` - Your AWS account ID
+- `${AWS_REGION}` - Your AWS region
+- `${ECR_REPOSITORY_NAME}` - Your ECR repository name
+- `${VERSION}` - Image version tag
 
-Для стандартної RDS:
-```hcl
-module "rds" {
-  # ...
-  engine = "mysql"  # або "postgres", "mariadb"
-  engine_version = "8.0"  # версія движка
-  parameter_group_family_rds = "mysql8.0"  # сімейство параметрів
-  # ...
-}
-```
+## Jenkins and ArgoCD
 
-Для Aurora:
-```hcl
-module "rds" {
-  # ...
-  engine_cluster = "aurora-mysql"  # або "aurora-postgresql"
-  engine_version_cluster = "8.0.mysql_aurora.3.02.0"
-  parameter_group_family_aurora = "aurora-mysql8.0"
-  # ...
-}
-```
-
-**3. Зміна класу інстансу:**
-
-```hcl
-module "rds" {
-  # ...
-  instance_class = "db.t3.small"  # або db.t3.medium, db.r5.large тощо
-  # ...
-}
-```
-
-Доступні класи:
-- **Burstable**: `db.t3.micro`, `db.t3.small`, `db.t3.medium`, `db.t3.large`
-- **General Purpose**: `db.m5.large`, `db.m5.xlarge`
-- **Memory Optimized**: `db.r5.large`, `db.r5.xlarge`
-
-**4. Зміна розміру диску (тільки для стандартної RDS):**
-
-```hcl
-module "rds" {
-  # ...
-  allocated_storage = 100  # розмір в GB
-  # ...
-}
-```
-
-**5. Зміна кількості реплік для Aurora:**
-
-```hcl
-module "rds" {
-  # ...
-  use_aurora = true
-  aurora_instance_count = 3  # 1 writer + 2 reader replicas
-  aurora_replica_count = 2   # кількість reader реплік
-  # ...
-}
-```
-
-**6. Налаштування параметрів БД:**
-
-```hcl
-module "rds" {
-  # ...
-  parameters = {
-    max_connections            = "200"
-    log_min_duration_statement = "500"
-    shared_buffers             = "256MB"
-  }
-  # ...
-}
-```
-
-**7. Зміна доступності (public/private):**
-
-```hcl
-module "rds" {
-  # ...
-  publicly_accessible = false  # false = тільки в VPC, true = доступна з інтернету
-  # ...
-}
-```
-
-**8. Увімкнення Multi-AZ (тільки для стандартної RDS):**
-
-```hcl
-module "rds" {
-  # ...
-  multi_az = true  # створює standby replica в іншій AZ
-  # ...
-}
-```
-
-#### Компоненти модуля
-
-Модуль автоматично створює:
-
-- **DB Subnet Group** (`aws_db_subnet_group`) - група підмереж для БД
-- **Security Group** (`aws_security_group`) - правила доступу (порт 5432 для PostgreSQL)
-- **Parameter Group**:
-  - `aws_db_parameter_group` - для стандартної RDS
-  - `aws_rds_cluster_parameter_group` - для Aurora кластера
-
-Всі компоненти створюються автоматично залежно від значення `use_aurora`.
-
-## Application Configuration
-
-The Django application is configured to use PostgreSQL via environment variables. Update `django/myapp/settings.py`:
-
-```python
-POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "localhost")
-POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
-POSTGRES_DB = os.environ.get("POSTGRES_DB", "postgres")
-POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
-POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "password")
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "HOST": POSTGRES_HOST,
-        "PORT": int(POSTGRES_PORT),
-        "NAME": POSTGRES_DB,
-        "USER": POSTGRES_USER,
-        "PASSWORD": POSTGRES_PASSWORD,
-    }
-}
-```
-
-## How to Check Jenkins Job
+### Access Jenkins
 
 1. Get Jenkins LoadBalancer URL:
 ```bash
 kubectl get svc -n jenkins jenkins -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
 
-2. Access Jenkins UI (or use port-forward):
+2. Or use port-forward:
 ```bash
 kubectl port-forward -n jenkins svc/jenkins 8080:80
 ```
-Open `http://localhost:8080` in browser.
 
-3. Login with credentials from `modules/jenkins/values.yaml`.
+3. Login with:
+   - Username: `admin`
+   - Password: From `terraform/modules/jenkins/values.yaml` (or your configured password)
 
-4. Navigate to `jcasc` folder → `goit-django-docker` pipeline job.
-
-5. Check job status:
-   - View "Build History" to see all builds
-   - Click on a build number to see details
-   - Check "Console Output" to see build logs
-
-6. Trigger a new build:
-   - Click "Build Now"
-   - Monitor the build progress
-   - Verify that the pipeline builds Docker image, pushes to ECR, and updates Git
-
-7. Verify Git commit:
-   - Check your GitHub repository
-   - Confirm that `charts/django-app/values.yaml` was updated with new image tag
-
-## How to See Result in Argo CD
+### Access ArgoCD
 
 1. Get ArgoCD admin password:
 ```bash
@@ -400,54 +245,92 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
    - Accept the self-signed certificate warning
    - Login with username `admin` and password from step 1
 
-4. View applications:
-   - Click on "Applications" in the left menu
-   - Check application status (Synced, Healthy, OutOfSync)
+### Access Grafana
 
-5. View application details:
-   - Click on the application name
-   - See the application topology
-   - Check sync status and health of each resource
-
-6. View deployed application:
+1. Port-forward Grafana service:
 ```bash
-kubectl port-forward svc/django-app-service -n default 8000:8000
-```
-Open `http://localhost:8000` in browser to see the Django application.
-
-## ArgoCD Configuration
-
-ArgoCD is configured via Helm chart. Database connection values are provided in `charts/django-app/values.yaml`:
-
-```yaml
-config:
-  POSTGRES_PORT: ${POSTGRES_PORT}
-  POSTGRES_HOST: ${POSTGRES_HOST}  # RDS endpoint from Terraform output
-  POSTGRES_USER: ${POSTGRES_USER}
-  POSTGRES_DB: ${POSTGRES_DB}
-  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+kubectl port-forward svc/prometheus-grafana -n monitoring 3000:80
 ```
 
-After ArgoCD detects changes in Git (from Jenkins pipeline), it automatically syncs and updates the application.
+2. Access Grafana:
+   - Open `http://localhost:3000` in browser
+   - Login with:
+     - Username: `admin`
+     - Password: From `terraform/modules/monitoring/values.yaml` (or your configured password)
+
+## RDS Configuration
+
+The RDS module supports both standard RDS and Aurora PostgreSQL. To change the database type, set the `rds_use_aurora` variable in `terraform.tfvars`:
+
+```hcl
+rds_use_aurora = true  # true for Aurora, false for standard RDS
+```
+
+### Changing RDS Parameters
+
+Edit `terraform/terraform.tfvars`:
+
+```hcl
+# For Aurora
+rds_use_aurora = true
+rds_aurora_engine = "aurora-postgresql"
+rds_aurora_engine_version = "15.3"
+
+# For Standard RDS
+rds_use_aurora = false
+rds_instance_engine = "postgres"
+rds_instance_engine_version = "17.2"
+rds_instance_class = "db.t3.micro"
+```
+
+## General Maintenance
+
+If you need to make changes to Jenkins or ArgoCD:
+
+1. Uninstall Helm releases:
+```bash
+helm uninstall jenkins -n jenkins
+helm uninstall argo-cd -n argocd
+helm uninstall argo-cd-apps -n argocd
+```
+
+2. Reapply Terraform:
+```bash
+cd terraform
+terraform apply
+```
 
 ## Variables Reference
 
-All variables are defined in `variables.tf`. Key variables:
+### Main Variables (terraform/variables.tf)
 
-- **Project**: `project_name`, `environment`
-- **AWS**: `aws_account_id`, `aws_region`
-- **GitHub**: `github_username`, `github_repo`, `github_branch`
-- **ECR**: `ecr_repository_name`
-- **RDS**: `rds_name`, `rds_db_name`, `rds_username`, `rds_password`, `rds_instance_class`, `rds_allocated_storage`
-- **Jenkins**: `jenkins_admin_username`, `jenkins_admin_password`
+| Variable | Type | Description | Required | Default |
+|----------|------|-------------|-----------|---------|
+| `name` | `string` | Project name for resource naming | ✅ | - |
+| `aws_region` | `string` | AWS region | ❌ | `us-east-1` |
+| `aws_account_id` | `string` | AWS account ID | ✅ | - |
+| `s3_backend_bucket` | `string` | S3 bucket for Terraform state | ✅ | - |
+| `ecr_repository_name` | `string` | ECR repository name | ✅ | - |
+| `github_username` | `string` | GitHub username | ✅ | - |
+| `github_repo` | `string` | GitHub repository name | ✅ | - |
+| `github_branch` | `string` | GitHub branch name | ❌ | `main` |
+| `jenkins_admin_password` | `string` | Jenkins admin password (sensitive) | ✅ | - |
+| `grafana_admin_password` | `string` | Grafana admin password (sensitive) | ✅ | - |
+| `rds_password` | `string` | RDS database password (sensitive) | ✅ | - |
+| `rds_username` | `string` | RDS username | ❌ | `postgres` |
+| `rds_database_name` | `string` | Database name | ❌ | `myapp` |
+| `rds_use_aurora` | `bool` | Use Aurora cluster | ❌ | `false` |
+| `rds_instance_class` | `string` | RDS instance class | ❌ | `db.t3.micro` |
+| `rds_publicly_accessible` | `bool` | Publicly accessible RDS | ❌ | `false` |
+| `rds_multi_az` | `bool` | Multi-AZ deployment | ❌ | `true` |
 
 ## Important Notes
 
 - **Security**: Never commit `terraform.tfvars` or files with real passwords to Git
-- **Backend**: Update `backend.tf` with your S3 bucket name before first `terraform init`
-- **RDS Endpoint**: Get the RDS endpoint from Terraform output and update `charts/django-app/values.yaml`
+- **Backend**: Update `terraform/backend.tf` with your S3 bucket name before first `terraform init`
 - **YAML Variables**: Replace all `${VARIABLE}` placeholders in YAML files with actual values
-- **Production**: This configuration is for development/testing. Adjust security settings for production use.
+- **Production**: This configuration is for development/testing. Adjust security settings for production use
+- **Sensitive Data**: All passwords and secrets should be stored securely (AWS Secrets Manager, environment variables, etc.)
 
 ## Troubleshooting
 

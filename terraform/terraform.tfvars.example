@@ -1,0 +1,46 @@
+# Copy this file to terraform.tfvars and fill in your values
+# terraform.tfvars should be in .gitignore and not committed
+
+# Project configuration
+name = "your-project-name"
+
+# AWS configuration
+aws_region    = "us-east-1"
+aws_account_id = "123456789012"
+
+# S3 Backend
+s3_backend_bucket = "your-project-name-terraform-state"
+
+# ECR configuration
+ecr_repository_name = "your-ecr-repo-name"
+
+# GitHub configuration
+github_username = "your-github-username"
+github_repo     = "your-repo-name"
+github_branch   = "main"
+
+# Jenkins configuration
+jenkins_admin_password = "your-secure-password"
+
+# Grafana configuration
+grafana_admin_password = "your-secure-password"
+
+# RDS configuration
+rds_password = "your-secure-database-password"
+rds_username = "postgres"
+rds_database_name = "myapp"
+rds_use_aurora = false
+rds_publicly_accessible = false
+rds_multi_az = true
+rds_instance_class = "db.t3.micro"
+
+# RDS Aurora configuration (if use_aurora = true)
+rds_aurora_engine = "aurora-postgresql"
+rds_aurora_engine_version = "15.3"
+rds_aurora_parameter_group_family = "aurora-postgresql15"
+
+# RDS Standard configuration (if use_aurora = false)
+rds_instance_engine = "postgres"
+rds_instance_engine_version = "17.2"
+rds_instance_parameter_group_family = "postgres17"
+
