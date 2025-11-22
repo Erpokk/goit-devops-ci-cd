@@ -1,6 +1,7 @@
 """Main app views"""
 
 import socket
+from django.conf import settings
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.db import connection
@@ -18,7 +19,17 @@ def test_db(request):  # pylint: disable=unused-argument
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1;")
-        return JsonResponse({"success": True})
+        return JsonResponse(
+            {
+                "success": True,
+                "config": {
+                    "db_hostname": settings.POSTGRES_HOST,
+                    "db_port": settings.POSTGRES_PORT,
+                    "db_name": settings.POSTGRES_DB,
+                    "db_user": settings.POSTGRES_USER,
+                },
+            }
+        )
     except Exception as e:  # pylint: disable=broad-except
         return JsonResponse({"success": False, "error": str(e)})
 

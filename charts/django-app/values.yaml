@@ -1,6 +1,6 @@
 image:
   repository: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}
-  tag: v1.0.6
+  tag: v1.0.3
   pullPolicy: IfNotPresent
 
 service:
@@ -11,8 +11,8 @@ ingress:
   enabled: false
 
 config:
-  POSTGRES_PORT: 5432
-  POSTGRES_HOST: db
-  POSTGRES_USER: django_user
-  POSTGRES_DB: django_db
+  POSTGRES_PORT: ${POSTGRES_PORT}
+  POSTGRES_HOST: ${POSTGRES_HOST}
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_DB: ${POSTGRES_DB}
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
