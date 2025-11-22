@@ -1,29 +1,18 @@
 image:
-  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/lesson-7-ecr
-  tag: latest
+  repository: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}
+  tag: v1.0.6
   pullPolicy: IfNotPresent
 
 service:
-  type: LoadBalancer
-  port: 80
-  targetPort: 8000
-
-autoscaler:
-  enabled: true
-  minReplicas: 2
-  maxReplicas: 6
-  targetCPUUtilizationPercentage: 70
-
-config:
-  DJANGO_SETTINGS_MODULE: myproject.settings
-  SECRET_KEY: "change-me"
-  ALLOWED_HOSTS: "*"
-  DEBUG: "False"
+  type: ClusterIP
+  port: 8000
 
 ingress:
   enabled: false
-  className: nginx
-  host: app.example.com
-  path: /
-  pathType: Prefix
-  tls: false
+
+config:
+  POSTGRES_PORT: 5432
+  POSTGRES_HOST: db
+  POSTGRES_USER: django_user
+  POSTGRES_DB: django_db
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

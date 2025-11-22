@@ -1,0 +1,23 @@
+# Copy this file to terraform.tfvars and fill in your values
+# terraform.tfvars is in .gitignore and should not be committed
+
+project_name = "django-app"
+environment   = "dev"
+aws_region    = "eu-central-1"
+
+# GitHub configuration
+github_username = "your-github-username"
+github_repo     = "your-repo-name"
+github_branch   = "main"
+
+# AWS configuration
+aws_account_id      = "123456789012"
+ecr_repository_name = "your-ecr-repo-name"
+
+# Database credentials
+postgres_password = "your-secure-password"
+
+# Jenkins credentials
+jenkins_admin_username = "admin"
+jenkins_admin_password = "your-secure-password"
+
